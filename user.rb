@@ -7,6 +7,7 @@ class ElsieUser
     def call
         @response ||= @session.get("user")["data"]
         throw "Wrong details! Did you get your password wrong?" if @response.nil?
+        @response
     end
 
     def id
