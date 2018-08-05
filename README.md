@@ -1,6 +1,11 @@
 Elsie Scraper
 ======
 
+## Online version!
+I've ported ElsieScraper to function online, so you don't have to install it yourself.
+https://proj.imjac.in/ta/elsie
+
+
 Import your calendar from Elsie and export it to .ics, a format iCal, Google Calendar and MS Outlook can all understand.
 ```
 PS D:\Programming\Uni\elsiescrape> ruby main.rb
