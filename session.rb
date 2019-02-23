@@ -5,24 +5,40 @@ require "securerandom"
 require "json"
 
 class ElsieSession
-    AGENT = "elsie-android-1.9.1-1-PRD"
-    CLIENTID = "7cd27c197fa64c51ab4f28eceacd8e77"
-    CLIENTSECRET = "1a7c32fd043f457eACB8B300C193D196"
+    attr_reader :user
 
     def initialize usr, pwd
         @user = usr
         @pwd = pwd
-        @auth = Base64.encode64("#{usr}:#{pwd}").strip
+        @authTopic = { curtinId: usr, password: pwd}.to_json
 
-        @baseurl = "https://cip-msa-v1-prd.au.cloudhub.io/api"
+        @baseurl = "https://elsie.curtin.edu.au/api"
 
         @uri = URI.parse(@baseurl)
         @http = Net::HTTP.new(@uri.host, @uri.port)
         @http.use_ssl = true
+
+        doAuth
     end
 
     def makeURI path
         URI.parse("#{@baseurl}/#{path}")
+    end
+
+    def doAuth
+        uri = makeURI("sessions")
+        puts uri
+        req = Net::HTTP::Post.new(uri.request_uri)
+        req['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
+        req['X-Correlation-ID'] = SecureRandom.uuid
+        req['Content-Type'] = 'application/json;charset=UTF-8'
+        req.body = @authTopic
+        response = @http.request req
+        @authResponse = JSON.parse(response.body)
+        unless @authResponse['errors'].nil?
+            throw "Auth Error: #{@authResponse['errors'].join(' ')}"
+        end
+        @token = @authResponse['data']['token']
     end
 
     def doGet path
@@ -30,9 +46,7 @@ class ElsieSession
         req = Net::HTTP::Get.new(uri.request_uri)
         req['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
         req['X-Correlation-ID'] = SecureRandom.uuid
-        req['X-Consumer-ID'] = AGENT
-        req['X-Caller-ID'] = AGENT
-        req['Authorization'] = "Basic #{@auth}"
+        req['authorization'] = "Bearer #{@token}" if @token
         @http.request req
     end
 
